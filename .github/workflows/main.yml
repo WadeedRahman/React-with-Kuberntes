@@ -43,16 +43,19 @@ jobs:
         run: |
           docker tag wadeed/shs:tagname myapp:latest
 
-      - name: Set up Minikube
-        uses: manusa/actions-setup-minikube@v2
-        with:
-          minikube version: 'latest'
-          kubernetes version: 'v1.18.3'
+      - name: Install kubectl
+        run: |
+          sudo apt-get update && sudo apt-get install -y kubectl
 
-      - name: Deploy to Minikube
-        env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+      - name: Start Minikube
+        run: |
+          minikube start
+
+      - name: Set up kubectl context
         run: |
           kubectl config use-context minikube
+
+      - name: Deploy to Minikube
+        run: |
           kubectl create deployment myapp --image=myapp:latest
           kubectl expose deployment myapp --type=NodePort --port=8080
