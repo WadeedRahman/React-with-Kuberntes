@@ -59,3 +59,8 @@ jobs:
         run: |
           kubectl create deployment myapp --image=myapp:latest
           kubectl expose deployment myapp --type=NodePort --port=8080
+
+      - name: Check deployment status
+        run: |
+          kubectl get deployment myapp
+          kubectl get pods
