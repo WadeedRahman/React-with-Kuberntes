@@ -1,1 +1,58 @@
-name
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:latest ./myapp
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: myapp:latest
+
+  cd:
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull image from Docker Hub
+        run: |
+          docker pull wadeed/shs:tagname
+
+      - name: Tag the image
+        run: |
+          docker tag wadeed/shs:tagname myapp:latest
+
+      - name: Set up Minikube
+        uses: manusa/actions-setup-minikube@v2
+        with:
+          minikube version: 'latest'
+          kubernetes version: 'v1.18.3'
+
+      - name: Deploy to Minikube
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          kubectl config use-context minikube
+          kubectl create deployment myapp --image=myapp:latest
+          kubectl expose deployment myapp --type=NodePort --port=8080
